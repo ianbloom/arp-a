@@ -1,0 +1,45 @@
+{
+    "auditVersion": 0,
+    "scheduleOption": 0,
+    "name": "MAC_via_ARP",
+    "description": "Obtains MAC addresses for devices in the LAN via the Address Resolution Protocol (ARP).",
+    "appliesTo": "true()",
+    "id": 33,
+    "technology": "",
+    "type": "propertyrule",
+    "params": [
+        {
+            "name": "linuxcmdline",
+            "comment": "",
+            "value": ""
+        },
+        {
+            "name": "linuxscript",
+            "comment": "",
+            "value": ""
+        },
+        {
+            "name": "scriptgroovy",
+            "comment": "",
+            "value": "// Obtain Collector platform due to different implementations of arp\ncollector_platform = hostProps.get(\"system.collectorplatform\")\n\n// Get list of host IPs\nips = hostProps.get(\"system.ips\")\ndevice_ip_array = ips.split(\",\")\n\n// Collect mac addresses on LAN\narp_result = \"arp -a\".execute().text\n\n// Initialize holder dictionary and format data\nholder_dict = [:]\n\n//////////////////////\n// Windows Collector//\n//////////////////////\n\nif(collector_platform == 'windows') {\n    count = 0\n    // Iterate through each line of arp_result and process\n    arp_result.eachLine { line ->\n        // Skip header lines\n        if(count > 2) {\n            line_array = line.split([' '])\n            // Remove null elements\n            line_array = line_array.findAll { item -> !item.isEmpty() }\n            // Trim parentheses\n            ip_addr = line_array[0].replace(\"(\", \"\").replace(\")\", \"\")\n            mac_addr = line_array[1].replaceAll(\"-\",\":\")\n            // Append MAC if there is more than one, else initialize\n            if(holder_dict.containsKey(ip_addr)) {\n                holder_dict[\"${ip_addr}\"] = holder_dict[\"${ip_addr}\"] + \", ${mac_addr}\"\n            }\n            else {\n                holder_dict[\"${ip_addr}\"] = mac_addr\n            }\n        }\n        // Iterate\n        count += 1\n    }\n}\n\n/////////////////////\n// Linux Collector //\n/////////////////////\n\nelse {\n    // do nothing for now\n    arp_result.eachLine { line ->\n        line_array = line.split([' '])\n        ip_addr = line_array[1].replace(\"(\", \"\").replace(\")\", \"\")\n        mac_addr = line_array[3]\n        if(holder_dict.containsKey(ip_addr)) {\n            holder_dict[\"${ip_addr}\"] = holder_dict[\"${ip_addr}\"] + \", ${mac_addr}\"\n        }\n        else {\n            holder_dict[\"${ip_addr}\"] = mac_addr\n        }\n    }\n}\n\n// Check if ips is a member of holder_dicts keys\n// possible_mac will only be 'true' if it is present in holder_dict, if so it'll be its value (mac)\ndevice_ip_array.each{ device_ip ->\n    // println(\"Checking if ${device_ip} was discovered during 'arp -a'\")\n    possible_mac = holder_dict.find{ it.key == \"${device_ip}\" }?.value\n    if(possible_mac == null) {\n        // println(\"${device_ip} was not discovered\")\n    }\n    else {\n        println(\"auto.mac=${possible_mac}\")\n    }\n}\n\nreturn 0;"
+        },
+        {
+            "name": "scripttype",
+            "comment": "embed",
+            "value": "embed"
+        },
+        {
+            "name": "windowscmdline",
+            "comment": "",
+            "value": ""
+        },
+        {
+            "name": "windowsscript",
+            "comment": "",
+            "value": ""
+        }
+    ],
+    "version": 1541702528,
+    "group": "",
+    "tags": ""
+}

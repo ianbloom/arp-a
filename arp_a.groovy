@@ -62,10 +62,10 @@ else {
 // Check if ips is a member of holder_dicts keys
 // possible_mac will only be 'true' if it is present in holder_dict, if so it'll be its value (mac)
 device_ip_array.each{ device_ip ->
-    println("Checking if ${device_ip} was discovered during 'arp -a'")
+    // println("Checking if ${device_ip} was discovered during 'arp -a'")
     possible_mac = holder_dict.find{ it.key == "${device_ip}" }?.value
     if(possible_mac == null) {
-        println("${device_ip} was not discovered")
+        // println("${device_ip} was not discovered")
     }
     else {
         println("auto.mac=${possible_mac}")
